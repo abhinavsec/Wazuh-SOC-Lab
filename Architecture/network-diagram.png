@@ -1,0 +1,14 @@
+                     Internet (Optional)
+                           │
+                  Oracle VirtualBox Network
+                           │
+ ┌───────────────────────────────────────────────────┐
+ │                                                   │
+ │   Kali Linux           Windows 10         Ubuntu  │
+ │   (Attacker)  ───────► (Victim) ───────►  Wazuh   │
+ │                        Sysmon + Agent     Server  │
+ │                                                   │
+ └───────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+                              Wazuh Dashboard

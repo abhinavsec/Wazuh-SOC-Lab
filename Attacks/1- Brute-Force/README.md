@@ -1,5 +1,18 @@
 # Attack 01 – SSH Brute Force
 
+## Attack Summary
+
+| Item | Value |
+|------|-------|
+| Attack Type | SSH Brute Force |
+| Tool Used | Hydra |
+| Attacker | Kali Linux |
+| Victim | Windows 10 |
+| SIEM | Wazuh |
+| Detection Status | Detected |
+| Result | True Positive |
+| MITRE Technique | T1110 |
+
 ## Objective
 
 The objective of this simulation was to generate multiple failed SSH authentication attempts against a Windows 10 system running OpenSSH and observe how Wazuh detects and logs the activity.
@@ -19,7 +32,7 @@ Monitoring:
 SIEM:
 - Wazuh Manager
 
-  ## Attack Execution
+## Attack Execution
 
 The attack was performed from the Kali Linux attacker machine against the Windows 10 victim running the OpenSSH service.
 
@@ -37,15 +50,37 @@ The repeated authentication failures indicated behavior consistent with a brute-
 
 ## Evidence Collection
 
-The following evidence was collected during the investigation:
+### Wazuh Alert Information
 
-- Wazuh alerts generated during the attack.
-- Windows authentication events related to failed SSH logins.
-- Source IP address of the attacking system - 10.0.3.9
-- Target IP address of the Windows endpoint - 10.0.3.11
-- Username targeted during the attack - FAKE
-- Timestamps of authentication attempts - Between 18:15 - 18:17
-- Number of failed login attempts observed during the attack - 73
+| Field | Value |
+|-------|-------|
+| Rule ID | *60122* |
+| Rule Level | *5* |
+| Rule Description | *Logon failure - Unknown user or bad password.* |
+| Alert Timestamp | Between 18:15 - 18:17 |
+
+### Windows Event Information
+
+| Field | Value |
+|-------|-------|
+| Event ID | *4625* |
+| Process Name | *C:\\Windows\\System32\\OpenSSH\\sshd.exe* |
+
+### Network Information
+
+| Field | Value |
+|-------|-------|
+| Source IP | 10.0.3.9 |
+| Destination IP | 10.0.3.11 |
+| Protocol | SSH (TCP/22) |
+
+### Authentication Information
+
+| Field | Value |
+|-------|-------|
+| Username Targeted | FAKE |
+| Failed Login Attempts | 73 |
+| Attack Duration | Approximately 2 minutes |
 
 ## Analysis
 
@@ -73,6 +108,15 @@ Recommended Response:
 - Block or rate-limit the attacking IP if unauthorized.
 - Monitor for additional suspicious authentication activity.
 
+## Impact Assessment
+
+No successful authentication occurred during the simulation.
+
+The attack demonstrated how repeated login attempts can indicate an attempt to compromise credentials.
+
+If successful, an attacker could gain unauthorized access to the Windows system through SSH.
+
+
 ## MITRE ATT&CK Mapping
 
 | Tactic | Technique |
@@ -80,18 +124,18 @@ Recommended Response:
 | Credential Access | T1110 - Brute Force |
 
 
-## Indicators of Compromise (IOCs)
+## Indicators of Compromise
 
-The following indicators were observed during the investigation:
-
+- Source IP: 10.0.3.9
+- Destination IP: 10.0.3.11
+- Protocol: SSH (TCP/22)
 - Multiple failed SSH login attempts
-- Repeated authentication failures
-- High volume of login attempts within a short time period
-- Unknown source Ip adress
-- Wazuh alerts associated with authentication failures
+- 73 authentication failures
+- High frequency of login attempts
+- Wazuh authentication alerts
 
 
-  ## Mitigation
+## Mitigation
 
 The following security measures are recommended to reduce the risk of brute-force attacks:
 
@@ -102,7 +146,7 @@ The following security measures are recommended to reduce the risk of brute-forc
 - Continuously monitor authentication logs for suspicious activity.
 - Configure alerting for excessive failed login attempts.
 
-  ## Lessons Learned
+## Lessons Learned
 
 This exercise demonstrated how repeated authentication attempts can be detected through centralized log monitoring.
 
@@ -110,9 +154,9 @@ It also highlighted the importance of correlating authentication events with SIE
 
 ## Conclusion
 
-The simulated SSH brute-force attack successfully generated security events that were detected by Wazuh.
+The simulated SSH brute-force attack successfully generated authentication events that were collected by the Wazuh Agent and analyzed by the Wazuh Manager.
 
-The investigation confirmed that centralized log collection and alert correlation can effectively identify repeated authentication failures and provide valuable information for SOC analysts during incident investigations.
+The investigation confirmed that the alerts accurately represented brute-force activity, demonstrating the effectiveness of centralized log monitoring for detecting credential-based attacks in a controlled SOC environment.
 
   
 

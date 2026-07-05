@@ -82,6 +82,25 @@ The primary objective of this simulation was not to compromise the system but to
 
 ---
 
+
+# Attack Commands
+
+## nmap Scan
+nmap -p- 10.0.3.11
+
+## Listing SMB shares
+smbclient -L //10.0.3.11 -U vboxuser
+
+## Connect to SMB Share
+smbclient //10.0.3.11/Project -U vboxuser
+
+## Upload File
+put test.ps1
+
+## Execute on Windows
+.\test.ps1
+
+
 # Detection
 
 Sysmon successfully monitored the execution of the PowerShell script and generated Process Creation events.
@@ -177,6 +196,21 @@ Wazuh correlated these events and classified the activity as **Discovery** under
 Although the executed command itself is legitimate Windows functionality, its execution through a remotely transferred PowerShell script is behavior frequently observed during attacker reconnaissance.
 
 ---
+
+
+# Attack Timeline
+
+| Time | Activity |
+|------|----------|
+|18:24|SMB Share created|
+|18:25|Port 445 scanned|
+|18:26|SMB authentication successful|
+|18:26|PowerShell script uploaded|
+|18:27|PowerShell script executed|
+|18:27|Sysmon Event ID 1 generated|
+|18:27|Wazuh Rule 92031 triggered|
+|18:27|Wazuh Rule 92033 triggered|
+
 
 # Analyst Decision
 

@@ -250,57 +250,6 @@ Sysmon successfully captured the process creation event, while Wazuh accurately 
 
 ---
 
-# Screenshots
-
-The following evidence was collected during the investigation.
-
-## 1. SMB Share Creation
-
-Screenshot showing creation of the Windows SMB share.
-
----
-
-## 2. SMB Service Enumeration
-
-Nmap scan confirming TCP port 445 is accessible.
-
----
-
-## 3. SMB Authentication
-
-Successful authentication to the Windows SMB share using smbclient.
-
----
-
-## 4. File Upload
-
-Uploading **test.ps1** to the SMB share.
-
----
-
-## 5. Script Execution
-
-Executing **test.ps1** on the Windows endpoint.
-
----
-
-## 6. Wazuh Alert Overview
-
-Wazuh alerts generated following script execution.
-
----
-
-## 7. Alert Details
-
-Rule ID 92031 showing Account Discovery detection.
-
----
-
-## 8. Alert Details
-
-Rule ID 92033 showing PowerShell spawning discovery activity.
-
----
 
 # Mitigation
 

@@ -46,7 +46,7 @@ Rather than focusing only on offensive techniques, this project emphasizes the c
 ## Planned Attack Simulations
 
 - Brute Force Attack
-- 2 - SMB Share Access and PowerShell Discovery
+- SMB Share Access and PowerShell Discovery
 
 ---
 

@@ -46,10 +46,7 @@ Rather than focusing only on offensive techniques, this project emphasizes the c
 ## Planned Attack Simulations
 
 - Brute Force Attack
-- Port Scanning
-- PowerShell Execution
-- Service/Persistence Simulation
-- Malware Simulation
+- 2 - SMB Share Access and PowerShell Discovery
 
 ---
 
@@ -58,7 +55,6 @@ Rather than focusing only on offensive techniques, this project emphasizes the c
 ```
 Architecture/
 Attacks/
-MITRE/
 Reports/
 Screenshots/
 Setup/

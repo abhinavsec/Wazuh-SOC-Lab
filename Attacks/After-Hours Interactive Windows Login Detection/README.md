@@ -154,6 +154,8 @@ Generated alert includes:
 - Rule ID
 - Rule Level
 
+
+![full](full_log.png)
 ---
 
 # Sample Detection

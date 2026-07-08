@@ -177,6 +177,9 @@ This rule evaluates the login timestamp and generates an alert only when authent
 - Reduce false positives
 - Generate a high-priority SOC alert
 
+![Custom Wazuh Detection Rule](custom_rule.png)
+
+
 ---
 
 ## Detection Workflow
@@ -246,6 +249,10 @@ These fields provide analysts with sufficient context to begin an authentication
 | User | vboxuser |
 | Host | WIN10 |
 | Detection | After-Hours Interactive Login |
+
+
+![full_log](full_log.png)
+
 
 ---
 

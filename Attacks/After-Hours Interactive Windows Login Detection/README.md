@@ -236,6 +236,11 @@ When the rule is triggered, the alert includes:
 
 These fields provide analysts with sufficient context to begin an authentication investigation.
 
+![Alert](Alert_overview.png)
+![log](Win_log)
+
+
+
 ---
 
 # Detection

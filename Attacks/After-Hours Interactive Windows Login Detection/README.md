@@ -1,79 +1,138 @@
 # 03 – After-Hours Interactive Windows Logon Detection using Wazuh
 
-## Overview
-
-One of the common indicators of unauthorized access is an interactive logon occurring outside an organization's normal business hours. Attackers who successfully obtain valid credentials often attempt to access systems late at night or during periods when user activity is minimal, reducing the likelihood of immediate detection.
-
-This project demonstrates how to build a custom detection rule in Wazuh that identifies successful Windows interactive logins occurring outside predefined business hours. The detection generates a high-severity alert whenever a user successfully logs in during non-business hours.
-
-This project is part of my SOC Analyst Detection Engineering series where custom detection logic is developed and validated using realistic attack simulations.
-
----
 
 # Objectives
 
-- Detect successful Windows interactive logons
-- Identify logins occurring outside business hours
-- Generate high-priority alerts for security analysts
-- Reduce alert noise by ignoring normal working-hour logins
-- Demonstrate custom rule creation in Wazuh
-- Map detections to the MITRE ATT&CK framework
+- Detect successful Windows interactive logons.
+- Monitor authentication activity outside approved business hours.
+- Reduce alert fatigue by suppressing expected daytime logins.
+- Generate high-severity alerts for potentially suspicious authentication events.
+- Demonstrate custom rule development and correlation in Wazuh.
+- Improve analyst visibility into abnormal user behavior.
+- Align detections with the MITRE ATT&CK framework.
+
+---
+
+# Threat Scenario
+
+One of the most common post-compromise attacker behaviors is the use of valid credentials to access systems when legitimate users are unlikely to be active.
+
+Examples include:
+
+- Stolen employee credentials
+- Insider misuse
+- Unauthorized remote access
+- Persistence after initial compromise
+- Lateral movement using compromised accounts
+
+Since many organizations experience very little legitimate user activity during late-night hours, monitoring successful interactive logins outside business hours provides analysts with an additional behavioral indicator that deserves investigation.
 
 ---
 
 # Lab Environment
 
 | Component | Details |
-|-----------|---------|
-| SIEM | Wazuh 4.x |
-| Manager | Ubuntu Server |
+|------------|---------|
+| SIEM Platform | Wazuh 4.7.5 |
+| Wazuh Manager | Ubuntu Server |
 | Endpoint | Windows 10 |
 | Agent | Wazuh Agent |
 | Log Source | Windows Security Event Logs |
-| Event ID | 4624 |
-| Decoder | windows_eventchannel |
+| Event Decoder | `windows_eventchannel` |
+| Event ID Monitored | 4624 |
+| Logon Type | Interactive (Type 2) |
+
+---
+
+# Windows Event Analysis
+
+Windows records every successful authentication using **Event ID 4624**.
+
+This event contains valuable information including:
+
+- Username
+- Computer Name
+- Logon Type
+- Source IP Address
+- Authentication Package
+- Process Name
+- Security Identifier (SID)
+- Timestamp
+
+However, generating alerts for every Event ID 4624 would create significant noise because successful logins occur continuously during normal business operations.
+
+Instead, this project introduces contextual filtering based on time.
 
 ---
 
 # Detection Logic
 
-Windows generates Event ID **4624** whenever a user successfully logs on.
+The detection follows three stages:
 
-Instead of alerting on every successful login, the detection focuses only on:
+### Stage 1
 
-- Successful logon
-- Interactive Logon (Logon Type 2)
-- Outside predefined business hours
+Windows generates **Event ID 4624** when a successful authentication occurs.
+
+↓
+
+### Stage 2
+
+Wazuh's built-in Windows authentication rules identify successful interactive logons. Also biult a custom rule to identify the same.
+
+↓
+
+### Stage 3
+
+A custom rule evaluates the event timestamp.
+
+If the login occurs **outside approved business hours**, Wazuh generates a **Level 12** security alert.
+
+---
+
+# Business Hour Configuration
 
 Business hours were defined as:
 
-```
-03:30 AM UTC
-to
+```text
 12:30 PM UTC
+to
+3:30 AM UTC
 ```
 
-Any successful interactive logon outside this time window generates a Level 12 alert.
+This corresponds to approximately:
+
+```text
+06:00 PM IST
+to
+09:00 AM IST
+```
+
+Any successful interactive login occurring outside this UTC time window triggers the custom detection.
 
 ---
 
-# Why UTC Time Was Used
+# Why UTC Was Used
 
-Wazuh internally evaluates event timestamps using Coordinated Universal Time (UTC).
+Wazuh evaluates rule time conditions using **Coordinated Universal Time (UTC)** rather than the local timezone displayed on Windows endpoints.
 
-Although the Windows endpoint displayed local time, the event timestamps received by the Wazuh Manager were normalized into UTC before rule evaluation.
+Although Windows displays timestamps in Indian Standard Time (IST), events are normalized into UTC before rule evaluation.
 
-To ensure accurate detections, the custom rule was written using UTC instead of local system time.
+For this reason, the custom rule was written using UTC values.
 
-*Using UTC prevents inconsistent detections when endpoints are deployed across different geographic regions or time zones.*
+Using UTC ensures:
+
+- Consistent detections across different time zones
+- Accurate rule evaluation
+- Standardized event correlation
+- Easier management in distributed environments
 
 ---
 
-# Custom Wazuh Rules
+# Custom Detection Rules
 
-## Rule 100100
+## Rule 100100 – Interactive Windows Logon Detection
 
-Detects successful Windows interactive logons.
+This rule identifies successful interactive Windows logons using Wazuh's built-in authentication rule as its parent.
 
 ```xml
 <rule id="100100" level="10">
@@ -86,11 +145,17 @@ Detects successful Windows interactive logons.
 </rule>
 ```
 
+### Purpose
+
+- Detect successful interactive authentication
+- Create a reusable parent rule
+- Separate authentication detection from business logic
+
 ---
 
-## Rule 100101
+## Rule 100101 – After-Hours Interactive Logon
 
-Detects interactive logons occurring outside business hours.
+This rule evaluates the login timestamp and generates an alert only when authentication occurs outside business hours.
 
 ```xml
 <rule id="100101" level="12">
@@ -105,187 +170,199 @@ Detects interactive logons occurring outside business hours.
 </rule>
 ```
 
-![Custom Wazuh Detection Rule](custom_rule.png)
+### Purpose
+
+- Monitor after-hours authentication
+- Apply business-hour filtering
+- Reduce false positives
+- Generate a high-priority SOC alert
 
 ---
 
-# Detection Workflow
+## Detection Workflow
 
-```
-Windows User Login
-        │
-        ▼
-Windows Security Log
-(Event ID 4624)
-        │
-        ▼
-Wazuh Agent
-        │
-        ▼
-Wazuh Manager
-        │
-        ▼
-Rule 60115
-(Successful Logon)
-        │
-        ▼
-Custom Rule 100101
-(Time Validation)
-        │
-        ▼
-Level 12 Alert
-Displayed in Dashboard
+```text
+                 Windows User Login
+                        │
+                        ▼
+          Windows Security Event Log
+                 Event ID 4624
+                        │
+                        ▼
+                 Wazuh Agent
+                        │
+                        ▼
+                Wazuh Manager
+                        │
+                        ▼
+          Built-in Authentication Rule
+                 (Rule 60118)
+                        │
+                        ▼
+        Custom Rule 100100
+  Interactive Logon Detected
+                        │
+                        ▼
+        Custom Rule 100101
+    Business Hour Validation
+                        │
+                        ▼
+          Level 12 Alert Generated
+                        │
+                        ▼
+          Wazuh Dashboard Alert
 ```
 
 ---
 
-# Alert Details
+# Alert Information
 
-Generated alert includes:
+When the rule is triggered, the alert includes:
 
 - Username
 - Computer Name
 - Event ID
 - Logon Type
-- Source IP
-- Timestamp
+- Source IP Address
 - Process Name
 - Authentication Package
 - Rule ID
 - Rule Level
+- Timestamp
+- Rule Groups
 
+These fields provide analysts with sufficient context to begin an authentication investigation.
 
-![full](full_log.png)
 ---
 
-# Sample Detection
+# Detection
 
-**Rule ID**
-
-```
-100101
-```
-
-**Severity**
-
-```
-Level 12
-```
-
-**Event ID**
-
-```
-4624
-```
-
-**Logon Type**
-
-```
-2 (Interactive)
-```
-
-**User**
-
-```
-vboxuser
-```
-
-**Host**
-
-```
-WIN10
-```
+| Field | Value |
+|--------|-------|
+| Rule ID | 100101 |
+| Severity | Level 12 |
+| Event ID | 4624 |
+| Logon Type | 2 (Interactive) |
+| User | vboxuser |
+| Host | WIN10 |
+| Detection | After-Hours Interactive Login |
 
 ---
 
 # MITRE ATT&CK Mapping
 
-| Technique | ID |
-|------------|----|
-| Valid Accounts | T1078 |
-| Local Accounts | T1078.001 |
-| Interactive Logon | TA0001 (Initial Access) |
-| Persistence using Valid Accounts | TA0003 |
-| Defense Evasion using Valid Credentials | TA0005 |
+| Tactic | Technique | ID | Relevance |
+|---------|-----------|----|-----------|
+| Initial Access | Valid Accounts | T1078 | Attackers often use legitimate credentials to gain access to systems. |
+| Initial Access | Local Accounts | T1078.001 | Applies when a local Windows account is used for authentication. |
 
-Although this project simply detects an after-hours login, the behavior aligns closely with the use of valid credentials by an attacker after initial compromise.
+Although a successful login alone does not confirm malicious activity, attackers frequently rely on valid credentials after gaining initial access. Monitoring authentication behavior outside expected working hours helps analysts identify suspicious account usage that may otherwise go unnoticed.
+
+---
+
+# Validation Process
+
+The detection was tested using two authentication scenarios.
+
+### Test 1 – Business Hours Login
+
+- User logged in during approved business hours.
+- Event ID 4624 was generated.
+- Parent authentication rule matched.
+- No after-hours alert was generated.
+
+**Result:** ✅ Expected behavior.
+
+---
+
+### Test 2 – After-Hours Login
+
+- User logged in outside business hours.
+- Event ID 4624 was generated.
+- Parent authentication rule matched.
+- Time validation succeeded.
+- Custom Rule 100101 generated a Level 12 alert.
+
+**Result:** Detection worked successfully.
 
 ---
 
 # Detection Strategy
 
-The detection uses multiple layers:
+This project demonstrates a layered detection approach:
 
-- Windows Security Event Logs
-- Wazuh Event Decoder
-- Built-in Windows authentication rules
-- Time-based filtering
-- Custom correlation rule
-- High-severity alert generation
+- Windows Security Event Logging
+- Wazuh Event Decoding
+- Built-in Authentication Rules
+- Custom Correlation Rules
+- Time-Based Filtering
+- Alert Prioritization
+- MITRE ATT&CK Mapping
 
-This layered approach significantly reduces false positives while maintaining visibility into suspicious authentication activity.
-
----
-
-# Validation
-
-The detection was validated by:
-
-- Logging into the Windows endpoint during business hours
-- Logging into the Windows endpoint outside business hours
-- Confirming only after-hours logins generated the custom alert
-- Verifying event fields inside Wazuh Dashboard
+Instead of relying solely on Event IDs, the detection combines authentication events with business context to improve detection quality while minimizing unnecessary alerts.
 
 ---
 
-# Screenshots
+# Possible Security Use Cases
 
-Include the following screenshots:
+This detection can assist SOC analysts in identifying:
 
-1. Lab Architecture
-2. Custom rules inside `local_rules.xml`
-3. Wazuh Manager restart
-4. Generated Level 12 Alert
-5. Expanded alert details
-6. Event ID 4624
-7. Rule Groups
-8. Full Event JSON
-9. Dashboard showing alert timeline
+- Compromised user accounts
+- Stolen credentials
+- Insider threats
+- Unauthorized workstation access
+- Suspicious administrator logins
+- Persistence using valid accounts
+- Authentication during maintenance windows
+- Early indicators of lateral movement
 
 ---
 
 # Future Improvements
 
-- Integrate Active Directory user validation
-- Exclude service accounts from detection
-- Trigger email notifications
-- Generate Slack alerts
-- Automatically create incident tickets
-- Add GeoIP correlation
-- Detect impossible travel
-- Detect multiple after-hours logins from different hosts
-- Build active response playbooks
+This detection can be extended by integrating additional security controls, including:
+
+- Active Directory user validation
+- Service account exclusions
+- GeoIP enrichment
+- Impossible travel detection
+- Privileged account monitoring
+- Multiple failed logins followed by success
+- Brute-force correlation
+- Email notifications
+- Slack or Microsoft Teams alerts
+- Active Response scripts
+- Automatic incident ticket creation
+- Integration with SOAR platforms
 
 ---
 
 # Skills Demonstrated
 
+This project demonstrates practical experience in:
+
 - Detection Engineering
-- Windows Event Log Analysis
-- Windows Authentication Monitoring
-- Wazuh Custom Rule Development
-- SOC Alert Tuning
 - Security Monitoring
 - SIEM Administration
+- Wazuh Custom Rule Development
+- Windows Event Log Analysis
+- Authentication Monitoring
+- SOC Alert Tuning
 - Threat Detection
 - Log Analysis
+- Event Correlation
 - MITRE ATT&CK Mapping
+- Security Operations
 
 ---
 
 # Key Takeaways
 
-This project demonstrates how custom Wazuh rules can be used to identify potentially suspicious authentication events by incorporating business logic into detection engineering.
+This illustrates how simple contextual logic can significantly improve authentication monitoring within a SIEM platform.
+
+Rather than generating alerts for every successful login, the solution applies business-hour awareness to identify authentication events that are more likely to warrant investigation. By combining Windows Security Event Logs, Wazuh's built-in detection capabilities, and custom rule correlation, the detection provides meaningful, high-confidence alerts while reducing unnecessary noise.
+
+It also reinforces essential SOC concepts including Windows authentication monitoring, Wazuh rule development, UTC-based time normalization, detection engineering, and behavioral threat detection aligned with the MITRE ATT&CK framework.
 
 Rather than generating alerts for every successful login, the detection focuses only on interactive logins occurring outside approved working hours. This significantly improves signal-to-noise ratio while highlighting activity that warrants analyst investigation.
 

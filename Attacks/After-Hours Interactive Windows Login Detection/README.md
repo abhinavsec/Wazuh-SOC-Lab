@@ -65,14 +65,7 @@ Although the Windows endpoint displayed local time, the event timestamps receive
 
 To ensure accurate detections, the custom rule was written using UTC instead of local system time.
 
-For example:
-
-| Local Time (IST) | UTC Time |
-|------------------|----------|
-| 09:00 AM IST | 03:30 AM UTC |
-| 06:00 PM IST | 12:30 PM UTC |
-
-Using UTC prevents inconsistent detections when endpoints are deployed across different geographic regions or time zones.
+*Using UTC prevents inconsistent detections when endpoints are deployed across different geographic regions or time zones.*
 
 ---
 
@@ -101,7 +94,7 @@ Detects interactive logons occurring outside business hours.
 
 ```xml
 <rule id="100101" level="12">
-    <if_sid>60115</if_sid>
+    <if_sid>100100</if_sid>
     <time>12:30 pm - 3:30 am</time>
     <description>After-Hours Interactive Windows Logon Detected</description>
     <group>

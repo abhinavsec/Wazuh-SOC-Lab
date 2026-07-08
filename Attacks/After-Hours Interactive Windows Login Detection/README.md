@@ -105,6 +105,8 @@ Detects interactive logons occurring outside business hours.
 </rule>
 ```
 
+![Custom Wazuh Detection Rule](custom_rule.png)
+
 ---
 
 # Detection Workflow
